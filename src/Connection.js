@@ -55,14 +55,20 @@ module.exports = class Connection
 
             this.cmds.shift()
 
-            console.log(`query success:${cmd.sql}`)
+            if(this.option.debug)
+            {
+                console.log(`query success:${cmd.sql}`)
+            }
 
             cmd.resolve(result)
 
         }
         catch(error)
         {
-            console.log(`query error:${cmd.sql}`,error)
+            if(this.option.debug)
+            {
+                console.error(`query success:${cmd.sql}`)
+            }
 
             if(error == "PROTOCOL_CONNECTION_LOST")     //断开
             {

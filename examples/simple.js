@@ -8,6 +8,10 @@ async function main()
 
     const collection = db.collection("user")
 
+    let cursor = await collection.find({})
+
+    console.table(cursor.toArray())
+
     collection.updateOne({ _id: 1 }, { $set: { name: "张三" } }, { upsert: 1 })
 
     let data = await collection.findOne({ _id: 1 })
@@ -21,7 +25,7 @@ async function main()
     collection.updateOne({ _id: 1 }, { $set: { level: 3,fight:{count : 1} } }, { upsert: 1 })
     collection.updateOne({ _id: 2 }, { $set: { name: "李四",level:4 } }, { upsert: 1 })
 
-    let cursor = await collection.find({})
+    cursor = await collection.find({})
 
     console.table(cursor.toArray())
 

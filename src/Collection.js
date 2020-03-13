@@ -606,7 +606,6 @@ module.exports = class Collection
             try
             {
                 await cmd()
-
             }
             catch(e)
             {
