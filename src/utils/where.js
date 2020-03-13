@@ -1,4 +1,4 @@
-const {json_extract: extract_key,string_val} = require("./mysql")
+const {json_extract,string_val} = require("./mysql")
 
 module.exports = function(cond)
 {
@@ -47,26 +47,26 @@ const directives = {}
 
 directives["$="] = (key, val) =>
 {
-    return `${extract_key(key)} = ${string_val(val)}`
+    return `${json_extract(key)} = ${string_val(val)}`
 }
 
 directives["$gt"] = (key, val) =>
 {
-    return `${extract_key(key)} > ${string_val(val)}`
+    return `${json_extract(key)} > ${string_val(val)}`
 }
 
 directives["$lt"] = (key, val) =>
 {
-    return `${extract_key(key)} < ${string_val(val)}`
+    return `${json_extract(key)} < ${string_val(val)}`
 }
 
 directives["$gte"] = (key, val) =>
 {
-    return `${extract_key(key)} >= ${string_val(val)}`
+    return `${json_extract(key)} >= ${string_val(val)}`
 }
 
 directives["$lte"] = (key, val) =>
 {
-    return `${extract_key(key)} <= ${string_val(val)}`
+    return `${json_extract(key)} <= ${string_val(val)}`
 }
 

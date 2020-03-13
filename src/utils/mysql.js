@@ -37,7 +37,7 @@ module.exports.json_extract = (key)=>
     {
         return `_content->'$.${key}'`
     }
-    return `${key}`
+    return `\`${key}\``
 }
 
 module.exports.json_set = (col_name,values)=>
@@ -94,7 +94,7 @@ module.exports.set_columns = (values)=>
     {
         let val = values[key]
 
-        sqls.push(`${key}=${string_val(val)}`)
+        sqls.push(`\`${key}\`=${string_val(val)}`)
     }
 
     return sqls.join(",")

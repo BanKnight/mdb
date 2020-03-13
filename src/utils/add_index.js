@@ -5,12 +5,11 @@ module.exports = function(name)
 
 class Indexer
 {
-    constructor()
+    constructor(name)
     {
         this._table = name
         this._name = ""
         this._meta = null
-
     }
 
     meta(cols)

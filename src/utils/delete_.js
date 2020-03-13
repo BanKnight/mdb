@@ -50,7 +50,7 @@ class Deleter
 
             order = order == 1? "inc":"desc"
             
-            columns.push(`${key} ${order}`)
+            columns.push(`\`${key}\` ${order}`)
         }
 
         this._order = `order by ${columns.join(",")}`

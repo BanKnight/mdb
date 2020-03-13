@@ -33,7 +33,7 @@ class Select
         let cols = []
         for(let key in info)
         {
-            cols.push(`${json_extract(key)} as ${key}`)
+            cols.push(`${json_extract(key)} as \`${key}\``)
         }
 
         this._cols = cols.join(",")
@@ -67,7 +67,7 @@ class Select
 
             order = order == 1? "inc":"desc"
             
-            columns.push(`${key} ${order}`)
+            columns.push(`\`${key}\` ${order}`)
         }
 
         this._order = `order by ${columns.join(",")}`

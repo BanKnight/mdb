@@ -17,7 +17,6 @@ const update = require("./utils/update")
 const delete_ = require("./utils/delete_")
 const create_table = require("./utils/create_table")
 
-const empty_result = []
 const default_projection = {_id : 1,_content:1}
 
 module.exports = class Collection
@@ -26,7 +25,7 @@ module.exports = class Collection
     {
         this.db = db
         this.name = name
-        this.full_name = `${this.db.name}.${this.name}`
+        this.full_name = `\`${this.db.name}\`.\`${this.name}\``
 
         this.meta = null        //实际表结构
         this.shadow_meta = new Meta()               //要改成的表结构
@@ -36,6 +35,7 @@ module.exports = class Collection
 
         this.doing = false
     }
+
 
     find(cond, option)
     {
@@ -64,7 +64,6 @@ module.exports = class Collection
                         .cols(option.projection)
                         .where(cond)
                         .order(option.sort)
-
 
                     for(let i = 0;;++i)
                     {
@@ -519,7 +518,7 @@ module.exports = class Collection
                 continue
             }
 
-            await this.connection.query(`ALTER TABLE ${this.full_name} ADD ${col_name} ${col.type} generated always AS (_content->'$.${col_name}')`)
+            await this.connection.query(`ALTER TABLE ${this.full_name} ADD \`${col_name}\` ${col.type} generated always AS (_content->'$.${col_name}')`)
         }
 
         //同步索引

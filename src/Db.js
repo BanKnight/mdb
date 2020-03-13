@@ -12,7 +12,7 @@ module.exports = class Db
         this.connection = client.connection
 
         this.connection.query(
-            `CREATE DATABASE IF NOT EXISTS ${this.name} DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci;`
+            `CREATE DATABASE IF NOT EXISTS \`${this.name}\` DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci;`
         )
     }
 

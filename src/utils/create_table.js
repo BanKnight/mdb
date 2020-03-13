@@ -29,14 +29,14 @@ class CreateTable
         default_val = default_val? `DEFAULT ${default_val}`: empty_str
         extra = extra || empty_str
 
-        this._col += `${col} ${data_type} ${default_val} ${extra},`
+        this._col += `\`${col}\` ${data_type} ${default_val} ${extra},`
         
         return this
     }   
 
     primary(col)
     {
-        this._primary = `PRIMARY KEY (${col})`
+        this._primary = `PRIMARY KEY (\`${col}\`)`
         return this
     }
 
