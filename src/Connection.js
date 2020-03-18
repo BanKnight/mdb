@@ -6,9 +6,12 @@ module.exports = class Connection
     {
         this.option = option
         this.mysql = null
+        this.log = option.log
 
         this.cmds = []
         this.doing = false
+
+        delete option.log
     }
 
     async connect()
@@ -20,7 +23,7 @@ module.exports = class Connection
     {
         return new Promise((resolve, reject) =>
         {
-            this.cmds.push({sql,values,resolve, reject})
+            this.cmds.push({sql,values,resolve, reject,retry : 0})
 
             this.do()
         })
@@ -47,41 +50,39 @@ module.exports = class Connection
             return
         }
 
-        let cmd = this.cmds[0]
+        let cmd = this.cmds.shift()
+
+        cmd.retry ++
 
         try
         {
             const result = await this.mysql.query(cmd.sql,cmd.values)
 
-            this.cmds.shift()
-
-            if(this.option.debug)
+            if(this.log)
             {
-                console.log(`query success:${cmd.sql}`)
+                this.log(`query success:${cmd.sql}`)
             }
 
             cmd.resolve(result)
-
         }
         catch(error)
         {
-            if(this.option.debug)
+            if(this.log)
             {
-                console.error(`query success:${cmd.sql}`)
+                this.log(`query error:${cmd.sql},${error}`)
             }
 
-            if(error == "PROTOCOL_CONNECTION_LOST")     //断开
+            this.mysql.close()
+            this.lost_conn()
+
+            if(cmd.retry < 3)
             {
-                this.mysql.close()
-
-                this.lost_conn()
-
-                return
+                this.cmds.shift(cmd)
             }
-
-            this.cmds.shift()
-
-            cmd.reject(error)
+            else
+            {
+                cmd.reject(error)
+            }
         }
         
         this.do_first()
@@ -94,6 +95,11 @@ module.exports = class Connection
             try
             {
                 await this.connect()
+
+                if(!this.doing)
+                {
+                    return
+                }
 
                 this.do_first()
             }

@@ -2,7 +2,7 @@ const mdb = require("../index")
 
 async function main()
 {
-    const client = await mdb.connect("mysql://root:123456@192.168.1.4")
+    const client = await mdb.connect("mysql://root:123456@192.168.1.4",{log:console.log})
 
     const db = client.db("project")
 

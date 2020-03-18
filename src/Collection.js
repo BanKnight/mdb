@@ -469,8 +469,6 @@ module.exports = class Collection
             }
 
             this.shadow_meta = this.meta.clone()
-
-            console.dir(results)
         }
         catch(e)        //找不到表
         {
