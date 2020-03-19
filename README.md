@@ -2,7 +2,7 @@
 用mysql作为存储介质，提供类似于mongodb的接口
 
 # 表结构
-+ _id: int/varchar(32),作为主键，写入时候必须指定
++ _id: bigint(20)/varchar(32),作为主键，写入时候必须指定
 + _content：json,作为json的内容
 + _inserted: timestamp,插入的时间
 + _updated: timestamp,更新的时间

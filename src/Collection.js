@@ -1,7 +1,7 @@
 /**
  * 表的固定结构是：
  * {
- *  _id:varchar(32)/int(11),固定key，作为主键,
+ *  _id:varchar(32)/bingint(20),固定key，作为主键,
  *  content：json,作为内容
  *  updated:int(4),上次更新时间
  * }
@@ -426,7 +426,7 @@ module.exports = class Collection
         }
         else if(tp == "number")
         {
-            this.shadow_meta.add_col("_id",mysql.DATATYPE.INT)
+            this.shadow_meta.add_col("_id",mysql.DATATYPE.BIGINT)
         }
     }
 
@@ -437,11 +437,20 @@ module.exports = class Collection
     {
         try
         {
+            let results = await this.connection.query(`SELECT COUNT(1) AS count FROM \`information_schema\`.\`TABLES\` WHERE \`TABLE_NAME\`=\"${this.name}\" AND \`TABLE_SCHEMA\`=\"${this.db.name}\" ;`)
+            let result = results[0]
+
+            if(result[0].count == 0)          //表不存在
+            {
+                this._init_shadow_meta()
+                return
+            }
+
             this.meta = new Meta()
 
             //搞定表结构
-            let results = await this.connection.query(`SHOW COLUMNS FROM ${this.full_name}`)
-            let result = results[0]
+            results = await this.connection.query(`SHOW COLUMNS FROM ${this.full_name};`)
+            result = results[0]
     
             for(let one of result)
             {    
@@ -483,7 +492,7 @@ module.exports = class Collection
      */
     async _init_shadow_meta()
     {
-        this.shadow_meta.add_col("_id",mysql.DATATYPE.INT)
+        this.shadow_meta.add_col("_id",mysql.DATATYPE.BIGINT)
         this.shadow_meta.add_col("_content",mysql.DATATYPE.JSON)
         this.shadow_meta.add_col("_inserted",mysql.DATATYPE.TIMESTAMP,mysql.DEFAULT_VALUE.CURRENT_TIME)
         this.shadow_meta.add_col("_updated",mysql.DATATYPE.TIMESTAMP,mysql.DEFAULT_VALUE.CURRENT_TIME,mysql.EXTRA.UPDATE_TIMESTAMP)

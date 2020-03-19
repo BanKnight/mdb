@@ -6,6 +6,7 @@ module.exports.DATATYPE = {
     TEXT:"text",
     VARCHAR:"varchar(32)",
     INT:"int(11)",
+    BIGINT:"bigint(20)",
     JSON:"json",
     TIMESTAMP:"timestamp",
 }

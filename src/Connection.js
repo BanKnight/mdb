@@ -67,22 +67,24 @@ module.exports = class Connection
         }
         catch(error)
         {
-            if(this.log)
-            {
-                this.log(`query error:${cmd.sql},${error}`)
-            }
-
             this.mysql.close()
             this.lost_conn()
 
             if(cmd.retry < 3)
             {
-                this.cmds.shift(cmd)
+                this.cmds.unshift(cmd)
             }
             else
             {
+                if(this.log)
+                {
+                    this.log(`query error:${cmd.sql},${error}`)
+                }
+
                 cmd.reject(error)
             }
+
+            return
         }
         
         this.do_first()
