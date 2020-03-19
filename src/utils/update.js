@@ -14,6 +14,7 @@ class Updator
 
         this._op = null
         this._values = {}
+        this._indexes = null
 
         this._where = ""
         this._limit = ""
@@ -36,10 +37,10 @@ class Updator
         return this
     }
 
-    indexes()
+    indexes(info)
     {
+        this._indexes = info
         return this
-
     }
 
     where(cond)
@@ -49,7 +50,7 @@ class Updator
             return this
         }
 
-        this._where = where(cond)
+        this._where = where(cond,this._indexes)
 
         return this
     }

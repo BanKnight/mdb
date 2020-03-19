@@ -164,38 +164,40 @@ module.exports = class Collection
      */
     createIndex(fields, option)
     {
-        // option = option || {}
-        // this.cmds.push(async ()=>
-        // {
-        //     let cols = []
-        //     for(let key in fields)
-        //     {
-        //         if(mysql.is_json_key(key) == false)         //如果是默认列，那么不允许创建
-        //         {
-        //             return
-        //         }
-        //         cols.push(key)
-        //     }
-    
-        //     cols.sort()
-    
-        //     const name = cols.join("+")                 //确定名字
+        option = option || {}
 
-        //     if(this.shadow_meta.indexes[name])          //检查是否已经有了这个索引
-        //     {
-        //         return
-        //     }
+        let cols = []
+        for(let key in fields)
+        {
+            if(mysql.is_json_key(key) == false)         //如果是默认列，那么不允许创建
+            {
+                throw new Error("default col can't be indexed")
+            }
+            cols.push(key)
+        }
 
-        //     this.shadow_meta.indexes[name] = Object.assign({fields},option)
+        cols.sort()
 
-        //     //创表之后才可以同步
-        //     if(this.meta)
-        //     {
-        //         await this._sync_meta()             
-        //     }
-        // })
+        const name = cols.join("+")                 //确定名字
 
-        // this._do()
+        this.cmds.push(async ()=>
+        {
+            if(this.shadow_meta.indexes[name])          //检查是否已经有了这个索引
+            {
+                return
+            }
+
+            if(this.shadow_meta == this.meta)           //copy on write
+            {
+                this.shadow_meta = this.shadow_meta.clone()                 
+            }
+
+            this.shadow_meta.indexes[name] = Object.assign({cols},option)
+
+            //此时数据类型可能还需要后续收集，暂时不做meta之间的同步
+        })
+
+        this._do()
     }
 
     async updateOne(cond, operation, option)
@@ -206,15 +208,11 @@ module.exports = class Collection
         {
             this.cmds.push(async ()=>
             {
-                if(this.meta == null)
-                {
-                    await this._parse_meta(cond, operation)
-
-                    await this._sync_meta()                
-                }
-
+                
                 try
                 {
+                    await this._sync_meta(cond, operation)                
+
                     const updator = update(this.full_name)
                     let sql = updator.set(operation)
                         .indexes(this.meta.indexes)         //传递索引信息，以优化后面的where
@@ -271,15 +269,10 @@ module.exports = class Collection
         {
             this.cmds.push(async ()=>
             {                    
-                if(this.meta == null)
-                {
-                    await this._parse_meta(cond, operation)
-
-                    await this._sync_meta()
-                }
-
                 try
                 {
+                    await this._sync_meta(cond, operation)
+
                     const sql = update(this.full_name)
                         .set(operation)
                         .indexes(this.meta.indexes)         //传递索引信息，以优化后面的where
@@ -383,54 +376,6 @@ module.exports = class Collection
     }
 
     /**
-     * 默认展开_content下的第一层
-     */
-    async _parse_meta(cond,operation)
-    {
-        let data = Object.assign({},cond,operation["$set"] || operation)
-
-        // for(let key in data)
-        // {
-        //     if(mysql.is_json_key(key) == false)
-        //     {
-        //         continue
-        //     }
-
-        //     let val = data[key]
-        //     let tp = typeof(val)
-
-        //     switch(tp)
-        //     {
-        //         case "string":
-        //             this.shadow_meta.add_col(key,mysql.DATATYPE.TEXT,null,mysql.EXTRA.VIRTUAL_JSON)
-        //             break
-        //         case "number":
-        //             this.shadow_meta.add_col(key,mysql.DATATYPE.INT,null,mysql.EXTRA.VIRTUAL_JSON)
-        //             break
-        //         case "object":
-        //             this.shadow_meta.add_col(key,mysql.DATATYPE.JSON,null,mysql.EXTRA.VIRTUAL_JSON)
-        //             break
-        //     }
-        // }
-
-        if(data._id == null)
-        {
-            return
-        }
-
-        let tp = typeof(data._id)
-
-        if(tp == "string")              //发现是字符串类型，那么修改列的类型
-        {
-            this.shadow_meta.add_col("_id",mysql.DATATYPE.VARCHAR)
-        }
-        else if(tp == "number")
-        {
-            this.shadow_meta.add_col("_id",mysql.DATATYPE.BIGINT)
-        }
-    }
-
-    /**
      * 从数据库读取表结构信息
      */
     async _load_meta()
@@ -453,13 +398,19 @@ module.exports = class Collection
             result = results[0]
     
             for(let one of result)
-            {    
-                this.meta.add_col(one.Field,one.Type,one.Default,one.Extra)
+            {   
+                if(mysql.is_json_key(one.Field))       //虚拟列，映射 _content中的字段
+                {
+                    this.meta.add_col(one.Field,one.Type,one.Default,`generated always AS (_content->>'$.${one.Field}')`)
+                }
+                else                                   //实际列
+                {
+                    this.meta.add_col(one.Field,one.Type,one.Default,one.Extra)
+                }
             }
 
             //以下搞定索引
             results = await this.connection.query(`SHOW INDEX FROM ${this.full_name}`)
-            
             result = results[0]
 
             for(let one of result)
@@ -470,14 +421,15 @@ module.exports = class Collection
                 }
                 else
                 {
-                    this.meta.indexes[one.Key_name] = {
-                        cols:one.Column_name.split(","),
-                        unique:one.Non_unique == 0 ? 1:0
-                    }
+                    let index = this.meta.get_index(one.Key_name)
+
+                    index.cols.push(one.Column_name)
+
+                    index.unique = one.Non_unique == 0 ? 1:0
                 }
             }
 
-            this.shadow_meta = this.meta.clone()
+            this.shadow_meta = this.meta
         }
         catch(e)        //找不到表
         {
@@ -504,15 +456,69 @@ module.exports = class Collection
     }
 
     /**
+     * 创建虚拟列以及更新列的设定
+     */
+    async _parse_meta(cond,operation)
+    {
+        let data = Object.assign({},cond,operation["$set"] || operation)
+
+        //创建索引需要的虚拟列虚拟列
+        for(let name in this.shadow_meta.indexes)                   //不包含_id的索引
+        {
+            const index = this.shadow_meta.indexes[name]            //索引信息
+
+            for(let col_name of index.cols)                         //作为索引的字段单独抽出来作为虚拟列
+            {
+                let val = data[col_name]
+                let tp = typeof(val)
+
+                switch(tp)
+                {
+                    case "string":                                  
+                        this.shadow_meta.add_col(col_name,mysql.DATATYPE.VARCHAR,null,mysql.EXTRA.VIRTUAL_JSON)
+                        break
+                    case "number":
+                        this.shadow_meta.add_col(col_name,mysql.DATATYPE.BIGINT,null,mysql.EXTRA.VIRTUAL_JSON)
+                        break
+                }
+            }
+        }
+
+        if(data._id == null)
+        {
+            return
+        }
+
+        let tp = typeof(data._id)               //修改_id的数据类型
+
+        if(tp == "string")              //发现是字符串类型，那么修改列的类型
+        {
+            this.shadow_meta.add_col("_id",mysql.DATATYPE.VARCHAR)
+        }
+        else if(tp == "number")
+        {
+            this.shadow_meta.add_col("_id",mysql.DATATYPE.BIGINT)
+        }
+    }
+
+    /**
      * 同步 meta 和 shadow_meta
      */
-    async _sync_meta()
+    async _sync_meta(cond, operation)
     {
         if(this.meta == null)      //还没创表
         {
+            this._parse_meta(cond,operation)
             await this._create_table()
             return
         }
+
+        if(this.meta == this.shadow_meta)
+        {
+            return
+        }
+
+        this._parse_meta(cond,operation)
         
         //同步列
         for(let col_name in this.shadow_meta.cols)
@@ -525,31 +531,39 @@ module.exports = class Collection
                 continue
             }
 
-            await this.connection.query(`ALTER TABLE ${this.full_name} ADD \`${col_name}\` ${col.type} generated always AS (_content->'$.${col_name}')`)
+            //不同步的唯一可能是：虚拟列，映射 _content中的字段
+            await this.connection.query(`ALTER TABLE ${this.full_name} ADD \`${col_name}\` ${col.type} generated always AS (_content->>'$.${col_name}')`)
         }
 
         //同步索引
-        // for(let index_name in this.shadow_meta.indexes)
-        // {
-        //     let index  = this.shadow_meta.indexes[index_name]
-        //     let exists = this.meta.indexes[index_name]
+        for(let index_name in this.shadow_meta.indexes)
+        {
+            let index  = this.shadow_meta.indexes[index_name]
+            let exists = this.meta.indexes[index_name]
 
-        //     if(exists)
-        //     {
-        //         continue
-        //     }
+            if(exists)
+            {
+                continue
+            }
 
-        //     if(index.unique)
-        //     {
-        //         this.connection.query(`ALTER TABLE ${this.full_name} ADD UNIQUE ${index_name}(${index.cols.join(",")});`)
-        //     }
-        //     else
-        //     {
-        //         this.connection.query(`ALTER TABLE ${this.full_name} ADD INDEX ${index_name}(${index.cols.join(",")});`)
-        //     }
-        // }
+            let col_names = []
 
-        this.meta = this.shadow_meta.clone()
+            for(let col of index.cols)
+            {
+                col_names.push(`\`${col}\``)
+            }
+
+            if(index.unique)
+            {
+                this.connection.query(`ALTER TABLE ${this.full_name} ADD UNIQUE \`${index_name}\`(${col_names.join(",")});`)
+            }
+            else
+            {
+                this.connection.query(`ALTER TABLE ${this.full_name} ADD INDEX \`${index_name}\`(${col_names.join(",")});`)
+            }
+        }
+
+        this.meta = this.shadow_meta
     }
 
     /**
@@ -563,11 +577,11 @@ module.exports = class Collection
         {
             let col = this.shadow_meta.cols[col_name]
 
-            if(mysql.is_json_key(col.field))       //映射 _content中的字段
+            if(mysql.is_json_key(col.field))       //虚拟列，映射 _content中的字段
             {
-                creator.add_col(col.field,col.type,col.default,`generated always AS (_content->'$.${col_name}')`)
+                creator.add_col(col.field,col.type,col.default,`generated always AS (_content->>'$.${col_name}')`)
             }
-            else
+            else                                   //实际列
             {
                 creator.add_col(col.field,col.type,col.default,col.extra)
             }
@@ -581,21 +595,28 @@ module.exports = class Collection
         await this.connection.query(sql)
 
         //接下来创建索引
-        // for(let index_name in this.indexes)
-        // {
-        //     let index = this.indexes[index_name]
+        for(let index_name in this.shadow_meta.indexes)
+        {
+            let index = this.shadow_meta.indexes[index_name]
 
-        //     if(index.unique)
-        //     {
-        //         this.connection.query(`ALTER TABLE ${this.full_name} ADD UNIQUE ${index_name}(${index.cols.join(",")});`)
-        //     }
-        //     else
-        //     {
-        //         this.connection.query(`ALTER TABLE ${this.full_name} ADD INDEX ${index_name}(${index.cols.join(",")});`)
-        //     }
-        // }
+            let col_names = []
 
-        this.meta = this.shadow_meta.clone()
+            for(let col of index.cols)
+            {
+                col_names.push(`\`${col}\``)
+            }
+
+            if(index.unique)
+            {
+                this.connection.query(`ALTER TABLE ${this.full_name} ADD UNIQUE \`${index_name}\`(${col_names.join(",")});`)
+            }
+            else
+            {
+                this.connection.query(`ALTER TABLE ${this.full_name} ADD INDEX \`${index_name}\`(${col_names.join(",")});`)
+            }
+        }
+
+        this.meta = this.shadow_meta
     }
 
     async _do()

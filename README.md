@@ -13,7 +13,7 @@
 + collection.updateMany(...):更新多条记录
 + collection.find(cond,option):查找记录，返回的是cursor
 + collection.findOne(...):查找单条数据
-+ collection.createIndex(...):创建json字段中的额外索引，暂不支持
++ collection.createIndex(fields,option):创建json字段中的额外索引(虚拟列)，会在真正写入的时候创建索引
 + collection.deleteOne(cond):指定条件下删除一条记录
 + collection.deleteMany(cond):指定条件下删除所有记录
 
@@ -22,7 +22,6 @@
 
 # 缺点
 + 适用于update操作比重高的场合：由于update接口，需要满足upsert特性，在更新失败后，会进行插入，因此对插入较多的场合（例如日志应用），操作次数比实际需要多出一倍
-+ 暂时缺乏json中的索引：json字段中的索引，在mysql中需要映射为虚拟列才可以做到
 
 # 使用例子
 [例子](https://github.com/BanKnight/mdb/blob/master/examples/simple.js)

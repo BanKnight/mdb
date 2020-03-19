@@ -48,7 +48,7 @@ class Select
             return this
         }
 
-        this._where = where(cond)
+        this._where = where(cond,this._indexes)
 
         return this
     }

@@ -5,7 +5,7 @@ module.exports = class Meta
         this.cols = {}
         this.engine = ""
         this.charset = ""
-        this.indexes = {}
+        this.indexes = {}       //[name] = {cols:[col_name,col_name],option}
         this.primary = null
     }
 
@@ -40,6 +40,21 @@ module.exports = class Meta
         this.cols[field] = col
 
         return col
+    }
+
+    get_index(name)
+    {
+        let index = this.indexes[name]
+        if(index)
+        {
+            return index
+        }
+
+        index = {cols:[]}
+
+        this.indexes[name] = index
+
+        return index
     }
 
     clone()

@@ -97,18 +97,19 @@ module.exports = class Connection
             try
             {
                 await this.connect()
-
-                if(!this.doing)
-                {
-                    return
-                }
-
-                this.do_first()
             }
             catch(error)
             {
                 this.lost_conn()
+                return
             }
+
+            if(!this.doing)
+            {
+                return
+            }
+
+            this.do_first()
         },3000)
     }
 }

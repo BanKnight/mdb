@@ -36,7 +36,7 @@ module.exports.json_extract = (key)=>
 {
     if(is_json_key(key))
     {
-        return `_content->'$.${key}'`
+        return `_content->>'$.${key}'`
     }
     return `\`${key}\``
 }

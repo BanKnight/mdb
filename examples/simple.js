@@ -8,11 +8,15 @@ async function main()
 
     const collection = db.collection("user")
 
+    collection.createIndex({name:1},{unique:1})
+    collection.createIndex({union:1,member:1},{unique:1})
+
+    collection.updateOne({ _id: 1 }, { $set: { name: "张三",union:1,member:3,lvl:10 } }, { upsert: 1 })
+    collection.updateOne({ _id: 2 }, { $set: { name: "李四",union:2,member:3,lvl:10 } }, { upsert: 1 })
+
     let cursor = await collection.find({})
 
     console.table(cursor.toArray())
-
-    collection.updateOne({ _id: 1 }, { $set: { name: "张三" } }, { upsert: 1 })
 
     let data = await collection.findOne({ _id: 1 })
 
@@ -22,20 +26,19 @@ async function main()
 
     console.dir(data)
 
-    collection.updateOne({ _id: 1 }, { $set: { level: 3,fight:{count : 1} } }, { upsert: 1 })
-    collection.updateOne({ _id: 2 }, { $set: { name: "李四",level:4 } }, { upsert: 1 })
+    data = await collection.findOne({ union: 1,member:3 },{projection:{name:1}})
 
-    cursor = await collection.find({})
+    console.dir(data)
 
-    console.table(cursor.toArray())
+    data = await collection.findOne({ lvl:10 },{projection:{name:1}})
 
-    await collection.updateOne({ _id: 1 }, { $set: { fight:{count : 2 } }}, { upsert: 1 })
-
-    cursor = await collection.find({})
-
-    console.table(cursor.toArray())
+    console.dir(data)
 
     await collection.deleteOne({_id:1})
+
+    cursor = await collection.find({})
+
+    console.table(cursor.toArray())
 
     await collection.deleteMany({})
 }
