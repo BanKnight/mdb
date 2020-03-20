@@ -7,6 +7,8 @@
  * }
  */
 
+const shortid  = require("shortid").generate
+
 const Cursor = require("./Cursor")
 const Meta = require("./Meta")
 
@@ -18,6 +20,8 @@ const delete_ = require("./utils/delete_")
 const create_table = require("./utils/create_table")
 
 const default_projection = {_id : 1,_content:1}
+
+const empty = {}
 
 module.exports = class Collection
 {
@@ -198,6 +202,86 @@ module.exports = class Collection
         })
 
         this._do()
+    }
+
+    async insertOne(data)
+    {
+        data._id = data._id || shortid()
+
+        return new Promise((resolve, reject) =>
+        {
+            this.cmds.push(async ()=>
+            {
+                
+                try
+                {
+                    await this._sync_meta(data)                
+
+                    //插入数据
+                    const inserter = insert(this.full_name)
+
+                    for(let key in data)
+                    {
+                        inserter.set(key,data[key])
+                    }
+                    
+                    const sql = inserter.done()  
+                    
+                    await this.connection.query(sql)
+
+                    resolve()
+                }
+                catch(e)
+                {
+                    reject(e)
+                }
+            })
+
+            this._do()
+        })
+    }
+
+    async insertMany(data)
+    {
+        return new Promise((resolve, reject) =>
+        {
+            this.cmds.push(async ()=>
+            {
+                try
+                {
+                    let promises = []
+
+                    for(let one of data)
+                    {
+                        one._id = one._id || shortid()
+
+                        await this._sync_meta(one)                
+    
+                        //插入数据
+                        const inserter = insert(this.full_name)
+    
+                        for(let key in one)
+                        {
+                            inserter.set(key,one[key])
+                        }
+                        
+                        const sql = inserter.done()  
+
+                        promises.push(this.connection.query(sql))
+                    }
+
+                    await Promise.all(promises)
+
+                    resolve()
+                }     
+                catch(e)
+                {
+                    reject(e)
+                }
+            })
+
+            this._do()
+        })
     }
 
     async updateOne(cond, operation, option)
@@ -458,7 +542,7 @@ module.exports = class Collection
     /**
      * 创建虚拟列以及更新列的设定
      */
-    async _parse_meta(cond,operation)
+    async _parse_meta(cond,operation = empty)
     {
         let data = Object.assign({},cond,operation["$set"] || operation)
 

@@ -11,7 +11,7 @@ async function main()
     collection.createIndex({name:1},{unique:1})
     collection.createIndex({union:1,member:1},{unique:1})
 
-    collection.updateOne({ _id: 1 }, { $set: { name: "张三",union:1,member:3,lvl:10 } }, { upsert: 1 })
+    collection.insertOne({ _id: 1, name: "张三",union:1,member:3,lvl:10 })
     collection.updateOne({ _id: 2 }, { $set: { name: "李四",union:2,member:3,lvl:10 } }, { upsert: 1 })
 
     let cursor = await collection.find({})
