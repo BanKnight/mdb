@@ -1,6 +1,6 @@
 {
   "name": "@bansky/mdb",
-  "version": "0.12.0",
+  "version": "0.13.0",
   "description": "用mysql作为存储介质，提供类似于mongodb的接口",
   "main": "index.js",
   "scripts": {
@@ -9,8 +9,7 @@
   "author": "bansky",
   "license": "MIT",
   "dependencies": {
-    "mysql2": "^2.1.0",
-    "shortid": "^2.2.15"
+    "mysql2": "^2.1.0"
   },
   "directories": {
     "example": "examples"

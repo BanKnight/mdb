@@ -7,8 +7,6 @@
  * }
  */
 
-const shortid  = require("shortid").generate
-
 const Cursor = require("./Cursor")
 const Meta = require("./Meta")
 
@@ -206,8 +204,6 @@ module.exports = class Collection
 
     async insertOne(data)
     {
-        data._id = data._id || shortid()
-
         return new Promise((resolve, reject) =>
         {
             this.cmds.push(async ()=>
@@ -215,12 +211,12 @@ module.exports = class Collection
                 
                 try
                 {
-                    await this._sync_meta(data)                
+                    await this._sync_meta(data)             //如果不指定_id，那么默认是auto_increment   
 
                     //插入数据
                     const inserter = insert(this.full_name)
 
-                    for(let key in data)
+                    for(let key in data)            
                     {
                         inserter.set(key,data[key])
                     }
@@ -251,10 +247,8 @@ module.exports = class Collection
                 {
                     let promises = []
 
-                    for(let one of data)
+                    for(let one of data)                            //如果不指定_id，那么默认是auto_increment
                     {
-                        one._id = one._id || shortid()
-
                         await this._sync_meta(one)                
     
                         //插入数据
@@ -327,6 +321,11 @@ module.exports = class Collection
                     for(let key in cond)
                     {
                         inserter.set(key,cond[key])
+                    }
+
+                    if(inserter._values._id == null)
+                    {
+                        inserter.set("_id")
                     }
 
                     sql = inserter.done()  
@@ -528,9 +527,9 @@ module.exports = class Collection
      */
     async _init_shadow_meta()
     {
-        this.shadow_meta.add_col("_id",mysql.DATATYPE.BIGINT)
-        this.shadow_meta.add_col("_content",mysql.DATATYPE.JSON)
-        this.shadow_meta.add_col("_inserted",mysql.DATATYPE.TIMESTAMP,mysql.DEFAULT_VALUE.CURRENT_TIME)
+        this.shadow_meta.add_col("_id",mysql.DATATYPE.BIGINT,"","AUTO_INCREMENT")
+        this.shadow_meta.add_col("_content",mysql.DATATYPE.JSON,"","")
+        this.shadow_meta.add_col("_inserted",mysql.DATATYPE.TIMESTAMP,mysql.DEFAULT_VALUE.CURRENT_TIME,"","")
         this.shadow_meta.add_col("_updated",mysql.DATATYPE.TIMESTAMP,mysql.DEFAULT_VALUE.CURRENT_TIME,mysql.EXTRA.UPDATE_TIMESTAMP)
 
         this.shadow_meta.primary = "_id"
@@ -559,10 +558,10 @@ module.exports = class Collection
                 switch(tp)
                 {
                     case "string":                                  
-                        this.shadow_meta.add_col(col_name,mysql.DATATYPE.VARCHAR,null,mysql.EXTRA.VIRTUAL_JSON)
+                        this.shadow_meta.add_col(col_name,mysql.DATATYPE.VARCHAR,"",mysql.EXTRA.VIRTUAL_JSON)
                         break
                     case "number":
-                        this.shadow_meta.add_col(col_name,mysql.DATATYPE.BIGINT,null,mysql.EXTRA.VIRTUAL_JSON)
+                        this.shadow_meta.add_col(col_name,mysql.DATATYPE.BIGINT,"",mysql.EXTRA.VIRTUAL_JSON)
                         break
                 }
             }
@@ -577,11 +576,11 @@ module.exports = class Collection
 
         if(tp == "string")              //发现是字符串类型，那么修改列的类型
         {
-            this.shadow_meta.add_col("_id",mysql.DATATYPE.VARCHAR)
+            this.shadow_meta.add_col("_id",mysql.DATATYPE.VARCHAR,"","")
         }
         else if(tp == "number")
         {
-            this.shadow_meta.add_col("_id",mysql.DATATYPE.BIGINT)
+            this.shadow_meta.add_col("_id",mysql.DATATYPE.BIGINT,"","")
         }
     }
 

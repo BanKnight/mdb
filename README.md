@@ -11,7 +11,7 @@
 + mdb.connect(url):连接数据库，url格式：mysql://user:password@host:port
 + collection.updateOne(cond,opertion,option):根据cond更新记录，option支持upsert(不存在即写入)
 + collection.updateMany(...):更新多条记录
-+ collection.insertOne(data):插入单条记录
++ collection.insertOne(data):插入单条记录,不指定_id情况下，使用auto_increment
 + collection.insertMany(data):插入多条记录
 + collection.find(cond,option):查找记录，返回的是cursor
 + collection.findOne(...):查找单条数据，支持对json中的字段查找，也支持索引查找，写法参考mongo中的$lt等
@@ -20,7 +20,7 @@
 + collection.deleteMany(cond):指定条件下删除所有记录
 
 # 原理
-将mongodb的bson结构存放在mysql的json字段中，封装这个json字段的使用，使得就好像在使用mongodb，也因此带来一些缺点
+将mongodb的bson结构存放在mysql的json字段中，封装这个json字段的使用，使得就好像在使用mongodb
 
 # 缺点
 + upsert特性：在更新失败后，会进行插入，因此对插入较多的场合（例如日志应用，更建议使用insert接口），操作次数比实际需要多出一倍

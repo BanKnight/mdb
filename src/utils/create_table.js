@@ -26,8 +26,10 @@ class CreateTable
 
     add_col(col,data_type,default_val,extra)
     {
-        default_val = default_val? `DEFAULT ${default_val}`: empty_str
-        extra = extra || empty_str
+        if(default_val != "")
+        {
+            default_val = `DEFAULT ${default_val}`
+        }
 
         this._col += `\`${col}\` ${data_type} ${default_val} ${extra},`
         

@@ -13,18 +13,9 @@ module.exports = class Meta
     {
         let col = this.get_col(field)
 
-        if(data_type)
-        {
-            col.type = data_type
-        }
-        if(default_val)
-        {
-            col.default = default_val
-        }
-        if(extra)
-        {
-            col.extra = extra
-        }
+        col.type = data_type
+        col.default = default_val
+        col.extra = extra        
     }
 
     get_col(field)
