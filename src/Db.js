@@ -28,4 +28,22 @@ module.exports = class Db
 
         return collection
     }
+
+    async drop_table(name)
+    {
+        let collection = this.collections[name]
+
+        delete this.collections[name]
+
+        if (collection)
+        {
+            await collection.drop()
+        }
+        else
+        {
+            await this.connection.query(
+                `DROP TABLE IF EXISTS \`${this.name}\`.\`${name}\``
+            )
+        }
+    }
 }

@@ -17,7 +17,7 @@ const update = require("./utils/update")
 const delete_ = require("./utils/delete_")
 const create_table = require("./utils/create_table")
 
-const default_projection = {_id : 1,_content:1}
+const default_projection = { _id: 1, _content: 1 }
 
 const empty = {}
 
@@ -49,11 +49,11 @@ module.exports = class Collection
 
         return new Promise((resolve, reject) =>
         {
-            this.cmds.push(async ()=>
+            this.cmds.push(async () =>
             {
-                const cursor = new Cursor(cond,option)
+                const cursor = new Cursor(cond, option)
 
-                if(!this.meta)
+                if (!this.meta)
                 {
                     resolve(cursor)
                     return
@@ -67,27 +67,27 @@ module.exports = class Collection
                         .where(cond)
                         .order(option.sort)
 
-                    for(let i = 0;;++i)
+                    for (let i = 0; ; ++i)
                     {
-                        const sql = selecter.limit(mysql.select_page * i,mysql.select_page)
+                        const sql = selecter.limit(mysql.select_page * i, mysql.select_page)
                             .done()
-        
+
                         const results = await this.connection.query(sql)
                         const datas = results[0]
-                        
-                        for(let one of datas)
+
+                        for (let one of datas)
                         {
                             cursor.push(one)
                         }
 
-                        if(datas.length < mysql.select_page)
+                        if (datas.length < mysql.select_page)
                         {
                             break
                         }
                     }
                     resolve(cursor)
                 }
-                catch(e)
+                catch (e)
                 {
                     reject(e)
                 }
@@ -106,9 +106,9 @@ module.exports = class Collection
 
         return new Promise((resolve, reject) =>
         {
-            this.cmds.push(async ()=>
+            this.cmds.push(async () =>
             {
-                if(!this.meta)
+                if (!this.meta)
                 {
                     resolve()
                     return
@@ -124,17 +124,17 @@ module.exports = class Collection
                         .limit(1)
                         .done()
 
-                    const cursor = new Cursor(cond,option)
+                    const cursor = new Cursor(cond, option)
 
                     const results = await this.connection.query(sql)
 
                     const datas = results[0]
 
-                    for(let one of datas)
+                    for (let one of datas)
                     {
                         cursor.push(one)
                     }
-                    if(cursor.hasNext())
+                    if (cursor.hasNext())
                     {
                         resolve(cursor.next())
                     }
@@ -143,7 +143,7 @@ module.exports = class Collection
                         resolve()
                     }
                 }
-                catch(e)
+                catch (e)
                 {
                     reject(e)
                 }
@@ -169,9 +169,9 @@ module.exports = class Collection
         option = option || {}
 
         let cols = []
-        for(let key in fields)
+        for (let key in fields)
         {
-            if(mysql.is_json_key(key) == false)         //如果是默认列，那么不允许创建
+            if (mysql.is_json_key(key) == false)         //如果是默认列，那么不允许创建
             {
                 throw new Error("default col can't be indexed")
             }
@@ -182,19 +182,19 @@ module.exports = class Collection
 
         const name = cols.join("+")                 //确定名字
 
-        this.cmds.push(async ()=>
+        this.cmds.push(async () =>
         {
-            if(this.shadow_meta.indexes[name])          //检查是否已经有了这个索引
+            if (this.shadow_meta.indexes[name])          //检查是否已经有了这个索引
             {
                 return
             }
 
-            if(this.shadow_meta == this.meta)           //copy on write
+            if (this.shadow_meta == this.meta)           //copy on write
             {
-                this.shadow_meta = this.shadow_meta.clone()                 
+                this.shadow_meta = this.shadow_meta.clone()
             }
 
-            this.shadow_meta.indexes[name] = Object.assign({cols},option)
+            this.shadow_meta.indexes[name] = Object.assign({ cols }, option)
 
             //此时数据类型可能还需要后续收集，暂时不做meta之间的同步
         })
@@ -206,9 +206,9 @@ module.exports = class Collection
     {
         return new Promise((resolve, reject) =>
         {
-            this.cmds.push(async ()=>
+            this.cmds.push(async () =>
             {
-                
+
                 try
                 {
                     await this._sync_meta(data)             //如果不指定_id，那么默认是auto_increment   
@@ -216,18 +216,18 @@ module.exports = class Collection
                     //插入数据
                     const inserter = insert(this.full_name)
 
-                    for(let key in data)            
+                    for (let key in data)
                     {
-                        inserter.set(key,data[key])
+                        inserter.set(key, data[key])
                     }
-                    
-                    const sql = inserter.done()  
-                    
+
+                    const sql = inserter.done()
+
                     await this.connection.query(sql)
 
                     resolve()
                 }
-                catch(e)
+                catch (e)
                 {
                     reject(e)
                 }
@@ -241,25 +241,25 @@ module.exports = class Collection
     {
         return new Promise((resolve, reject) =>
         {
-            this.cmds.push(async ()=>
+            this.cmds.push(async () =>
             {
                 try
                 {
                     let promises = []
 
-                    for(let one of data)                            //如果不指定_id，那么默认是auto_increment
+                    for (let one of data)                            //如果不指定_id，那么默认是auto_increment
                     {
-                        await this._sync_meta(one)                
-    
+                        await this._sync_meta(one)
+
                         //插入数据
                         const inserter = insert(this.full_name)
-    
-                        for(let key in one)
+
+                        for (let key in one)
                         {
-                            inserter.set(key,one[key])
+                            inserter.set(key, one[key])
                         }
-                        
-                        const sql = inserter.done()  
+
+                        const sql = inserter.done()
 
                         promises.push(this.connection.query(sql))
                     }
@@ -267,8 +267,8 @@ module.exports = class Collection
                     await Promise.all(promises)
 
                     resolve()
-                }     
-                catch(e)
+                }
+                catch (e)
                 {
                     reject(e)
                 }
@@ -284,12 +284,12 @@ module.exports = class Collection
 
         return new Promise((resolve, reject) =>
         {
-            this.cmds.push(async ()=>
+            this.cmds.push(async () =>
             {
-                
+
                 try
                 {
-                    await this._sync_meta(cond, operation)                
+                    await this._sync_meta(cond, operation)
 
                     const updator = update(this.full_name)
                     let sql = updator.set(operation)
@@ -300,13 +300,13 @@ module.exports = class Collection
 
                     const result = await this.connection.query(sql)
 
-                    if(result[0].affectedRows > 0)
+                    if (result[0].affectedRows > 0)
                     {
                         resolve()
                         return
                     }
 
-                    if(!option.upsert)
+                    if (!option.upsert)
                     {
                         resolve()
                         return
@@ -314,27 +314,27 @@ module.exports = class Collection
 
                     //插入数据
                     const inserter = insert(this.full_name)
-                    for(let key in updator._values)
+                    for (let key in updator._values)
                     {
-                        inserter.set(key,updator._values[key])
+                        inserter.set(key, updator._values[key])
                     }
-                    for(let key in cond)
+                    for (let key in cond)
                     {
-                        inserter.set(key,cond[key])
+                        inserter.set(key, cond[key])
                     }
 
-                    if(inserter._values._id == null)
+                    if (inserter._values._id == null)
                     {
                         inserter.set("_id")
                     }
 
-                    sql = inserter.done()  
-                    
+                    sql = inserter.done()
+
                     await this.connection.query(sql)
 
                     resolve()
                 }
-                catch(e)
+                catch (e)
                 {
                     reject(e)
                 }
@@ -350,8 +350,8 @@ module.exports = class Collection
 
         return new Promise((resolve, reject) =>
         {
-            this.cmds.push(async ()=>
-            {                    
+            this.cmds.push(async () =>
+            {
                 try
                 {
                     await this._sync_meta(cond, operation)
@@ -366,7 +366,7 @@ module.exports = class Collection
 
                     resolve()
                 }
-                catch(e)
+                catch (e)
                 {
                     reject(e)
                 }
@@ -380,9 +380,9 @@ module.exports = class Collection
     {
         return new Promise((resolve, reject) =>
         {
-            this.cmds.push(async ()=>
+            this.cmds.push(async () =>
             {
-                if(!this.meta)      //没有表，或者还没有创建
+                if (!this.meta)      //没有表，或者还没有创建
                 {
                     resolve()
                     return
@@ -400,7 +400,7 @@ module.exports = class Collection
 
                     resolve()
                 }
-                catch(e)
+                catch (e)
                 {
                     reject(e)
                 }
@@ -412,12 +412,12 @@ module.exports = class Collection
 
     is_no_cond(cond)
     {
-        if(cond == null)
+        if (cond == null)
         {
             return true
         }
 
-        for(let key in cond)
+        for (let key in cond)
         {
             return false
         }
@@ -425,13 +425,13 @@ module.exports = class Collection
         return true
     }
 
-    async deleteMany(cond)
+    deleteMany(cond)
     {
         return new Promise((resolve, reject) =>
         {
-            this.cmds.push(async ()=>
+            this.cmds.push(async () =>
             {
-                if(!this.meta)      //没有表，或者还没有创建
+                if (!this.meta)      //没有表，或者还没有创建
                 {
                     resolve()
                     return
@@ -440,15 +440,73 @@ module.exports = class Collection
                 try
                 {
                     let sql = delete_(this.full_name)
-                            .indexes(this.meta.indexes)         //传递索引信息，以优化后面的where
-                            .where(cond)
-                            .done()
+                        .indexes(this.meta.indexes)         //传递索引信息，以优化后面的where
+                        .where(cond)
+                        .done()
 
                     await this.connection.query(sql)
 
                     resolve()
                 }
-                catch(e)
+                catch (e)
+                {
+                    reject(e)
+                }
+            })
+
+            this._do()
+        })
+    }
+
+    async truncate()
+    {
+        return new Promise((resolve, reject) =>
+        {
+            this.cmds.push(async () =>
+            {
+                if (!this.meta)      //没有表，或者还没有创建
+                {
+                    resolve()
+                    return
+                }
+
+                try
+                {
+                    await this.connection.query(`TRUNCATE ${this.full_name};`)
+
+                    resolve()
+                }
+                catch (e)
+                {
+                    reject(e)
+                }
+            })
+
+            this._do()
+        })
+    }
+
+    async drop()
+    {
+        return new Promise((resolve, reject) =>
+        {
+            this.cmds.push(async () =>
+            {
+                if (!this.meta)      //没有表，或者还没有创建
+                {
+                    resolve()
+                    return
+                }
+
+                try
+                {
+                    await this.connection.query(`DROP TABLE ${this.full_name};`)
+
+                    this.connection = null
+
+                    resolve()
+                }
+                catch (e)
                 {
                     reject(e)
                 }
@@ -468,7 +526,7 @@ module.exports = class Collection
             let results = await this.connection.query(`SELECT COUNT(1) AS count FROM \`information_schema\`.\`TABLES\` WHERE \`TABLE_NAME\`=\"${this.name}\" AND \`TABLE_SCHEMA\`=\"${this.db.name}\" ;`)
             let result = results[0]
 
-            if(result[0].count == 0)          //表不存在
+            if (result[0].count == 0)          //表不存在
             {
                 this._init_shadow_meta()
                 return
@@ -479,16 +537,16 @@ module.exports = class Collection
             //搞定表结构
             results = await this.connection.query(`SHOW COLUMNS FROM ${this.full_name};`)
             result = results[0]
-    
-            for(let one of result)
-            {   
-                if(mysql.is_json_key(one.Field))       //虚拟列，映射 _content中的字段
+
+            for (let one of result)
+            {
+                if (mysql.is_json_key(one.Field))       //虚拟列，映射 _content中的字段
                 {
-                    this.meta.add_col(one.Field,one.Type,one.Default,`generated always AS (_content->>'$.${one.Field}')`)
+                    this.meta.add_col(one.Field, one.Type, one.Default, `generated always AS (_content->>'$.${one.Field}')`)
                 }
                 else                                   //实际列
                 {
-                    this.meta.add_col(one.Field,one.Type,one.Default,one.Extra)
+                    this.meta.add_col(one.Field, one.Type, one.Default, one.Extra)
                 }
             }
 
@@ -496,9 +554,9 @@ module.exports = class Collection
             results = await this.connection.query(`SHOW INDEX FROM ${this.full_name}`)
             result = results[0]
 
-            for(let one of result)
+            for (let one of result)
             {
-                if(one.Key_name == "PRIMARY")
+                if (one.Key_name == "PRIMARY")
                 {
                     this.meta.primary = one.Column_name
                 }
@@ -508,13 +566,13 @@ module.exports = class Collection
 
                     index.cols.push(one.Column_name)
 
-                    index.unique = one.Non_unique == 0 ? 1:0
+                    index.unique = one.Non_unique == 0 ? 1 : 0
                 }
             }
 
             this.shadow_meta = this.meta
         }
-        catch(e)        //找不到表
+        catch (e)        //找不到表
         {
             this.meta = null
 
@@ -527,10 +585,10 @@ module.exports = class Collection
      */
     async _init_shadow_meta()
     {
-        this.shadow_meta.add_col("_id",mysql.DATATYPE.BIGINT,"","AUTO_INCREMENT")
-        this.shadow_meta.add_col("_content",mysql.DATATYPE.JSON,"","")
-        this.shadow_meta.add_col("_inserted",mysql.DATATYPE.TIMESTAMP,mysql.DEFAULT_VALUE.CURRENT_TIME,"","")
-        this.shadow_meta.add_col("_updated",mysql.DATATYPE.TIMESTAMP,mysql.DEFAULT_VALUE.CURRENT_TIME,mysql.EXTRA.UPDATE_TIMESTAMP)
+        this.shadow_meta.add_col("_id", mysql.DATATYPE.BIGINT, "", "AUTO_INCREMENT")
+        this.shadow_meta.add_col("_content", mysql.DATATYPE.JSON, "", "")
+        this.shadow_meta.add_col("_inserted", mysql.DATATYPE.TIMESTAMP, mysql.DEFAULT_VALUE.CURRENT_TIME, "", "")
+        this.shadow_meta.add_col("_updated", mysql.DATATYPE.TIMESTAMP, mysql.DEFAULT_VALUE.CURRENT_TIME, mysql.EXTRA.UPDATE_TIMESTAMP)
 
         this.shadow_meta.primary = "_id"
 
@@ -541,46 +599,46 @@ module.exports = class Collection
     /**
      * 创建虚拟列以及更新列的设定
      */
-    async _parse_meta(cond,operation = empty)
+    async _parse_meta(cond, operation = empty)
     {
-        let data = Object.assign({},cond,operation["$set"] || operation)
+        let data = Object.assign({}, cond, operation["$set"] || operation)
 
         //创建索引需要的虚拟列虚拟列
-        for(let name in this.shadow_meta.indexes)                   //不包含_id的索引
+        for (let name in this.shadow_meta.indexes)                   //不包含_id的索引
         {
             const index = this.shadow_meta.indexes[name]            //索引信息
 
-            for(let col_name of index.cols)                         //作为索引的字段单独抽出来作为虚拟列
+            for (let col_name of index.cols)                         //作为索引的字段单独抽出来作为虚拟列
             {
                 let val = data[col_name]
-                let tp = typeof(val)
+                let tp = typeof (val)
 
-                switch(tp)
+                switch (tp)
                 {
-                    case "string":                                  
-                        this.shadow_meta.add_col(col_name,mysql.DATATYPE.VARCHAR,"",mysql.EXTRA.VIRTUAL_JSON)
+                    case "string":
+                        this.shadow_meta.add_col(col_name, mysql.DATATYPE.VARCHAR, "", mysql.EXTRA.VIRTUAL_JSON)
                         break
                     case "number":
-                        this.shadow_meta.add_col(col_name,mysql.DATATYPE.BIGINT,"",mysql.EXTRA.VIRTUAL_JSON)
+                        this.shadow_meta.add_col(col_name, mysql.DATATYPE.BIGINT, "", mysql.EXTRA.VIRTUAL_JSON)
                         break
                 }
             }
         }
 
-        if(data._id == null)
+        if (data._id == null)
         {
             return
         }
 
-        let tp = typeof(data._id)               //修改_id的数据类型
+        let tp = typeof (data._id)               //修改_id的数据类型
 
-        if(tp == "string")              //发现是字符串类型，那么修改列的类型
+        if (tp == "string")              //发现是字符串类型，那么修改列的类型
         {
-            this.shadow_meta.add_col("_id",mysql.DATATYPE.VARCHAR,"","")
+            this.shadow_meta.add_col("_id", mysql.DATATYPE.VARCHAR, "", "")
         }
-        else if(tp == "number")
+        else if (tp == "number")
         {
-            this.shadow_meta.add_col("_id",mysql.DATATYPE.BIGINT,"","")
+            this.shadow_meta.add_col("_id", mysql.DATATYPE.BIGINT, "", "")
         }
     }
 
@@ -589,27 +647,27 @@ module.exports = class Collection
      */
     async _sync_meta(cond, operation)
     {
-        if(this.meta == null)      //还没创表
+        if (this.meta == null)      //还没创表
         {
-            this._parse_meta(cond,operation)
+            this._parse_meta(cond, operation)
             await this._create_table()
             return
         }
 
-        if(this.meta == this.shadow_meta)
+        if (this.meta == this.shadow_meta)
         {
             return
         }
 
-        this._parse_meta(cond,operation)
-        
+        this._parse_meta(cond, operation)
+
         //同步列
-        for(let col_name in this.shadow_meta.cols)
+        for (let col_name in this.shadow_meta.cols)
         {
             let col = this.shadow_meta.cols[col_name]
             let exists = this.meta.cols[col_name]
 
-            if(exists)
+            if (exists)
             {
                 continue
             }
@@ -619,24 +677,24 @@ module.exports = class Collection
         }
 
         //同步索引
-        for(let index_name in this.shadow_meta.indexes)
+        for (let index_name in this.shadow_meta.indexes)
         {
-            let index  = this.shadow_meta.indexes[index_name]
+            let index = this.shadow_meta.indexes[index_name]
             let exists = this.meta.indexes[index_name]
 
-            if(exists)
+            if (exists)
             {
                 continue
             }
 
             let col_names = []
 
-            for(let col of index.cols)
+            for (let col of index.cols)
             {
                 col_names.push(`\`${col}\``)
             }
 
-            if(index.unique)
+            if (index.unique)
             {
                 this.connection.query(`ALTER TABLE ${this.full_name} ADD UNIQUE \`${index_name}\`(${col_names.join(",")});`)
             }
@@ -656,17 +714,17 @@ module.exports = class Collection
     {
         const creator = create_table(this.full_name).if_not_exists()
 
-        for(let col_name in this.shadow_meta.cols)
+        for (let col_name in this.shadow_meta.cols)
         {
             let col = this.shadow_meta.cols[col_name]
 
-            if(mysql.is_json_key(col.field))       //虚拟列，映射 _content中的字段
+            if (mysql.is_json_key(col.field))       //虚拟列，映射 _content中的字段
             {
-                creator.add_col(col.field,col.type,col.default,`generated always AS (_content->>'$.${col_name}')`)
+                creator.add_col(col.field, col.type, col.default, `generated always AS (_content->>'$.${col_name}')`)
             }
             else                                   //实际列
             {
-                creator.add_col(col.field,col.type,col.default,col.extra)
+                creator.add_col(col.field, col.type, col.default, col.extra)
             }
         }
 
@@ -678,18 +736,18 @@ module.exports = class Collection
         await this.connection.query(sql)
 
         //接下来创建索引
-        for(let index_name in this.shadow_meta.indexes)
+        for (let index_name in this.shadow_meta.indexes)
         {
             let index = this.shadow_meta.indexes[index_name]
 
             let col_names = []
 
-            for(let col of index.cols)
+            for (let col of index.cols)
             {
                 col_names.push(`\`${col}\``)
             }
 
-            if(index.unique)
+            if (index.unique)
             {
                 this.connection.query(`ALTER TABLE ${this.full_name} ADD UNIQUE \`${index_name}\`(${col_names.join(",")});`)
             }
@@ -704,13 +762,13 @@ module.exports = class Collection
 
     async _do()
     {
-        if(this.doing)
+        if (this.doing)
         {
             return
         }
         this.doing = true
 
-        while(this.cmds.length > 0)
+        while (this.cmds.length > 0)
         {
             let cmd = this.cmds.shift()
 
@@ -718,7 +776,7 @@ module.exports = class Collection
             {
                 await cmd()
             }
-            catch(e)
+            catch (e)
             {
                 console.error(e)
             }

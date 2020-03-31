@@ -1,7 +1,8 @@
 const mdb = require("../index")
 
-async function main() {
-    const client = await mdb.connect("mysql://root:123456@192.168.1.4", { log: console.log })
+async function main()
+{
+    const client = await mdb.connect("mysql://root:123456@192.168.1.4:3310", { log: console.log })
 
     const db = client.db("project")
 
@@ -17,34 +18,30 @@ async function main() {
 
     console.table(cursor.toArray())
 
-    collection.updateOne({ _id: 1 }, { $set: { is_new: true, temp: null } })
+    collection.updateOne({ _id: 1 }, { $set: { is_new: true } })
 
     let data = await collection.findOne({ _id: 1 })
-
     console.dir(data)
 
     data = await collection.findOne({ name: "张三" }, { projection: { name: 1 } })
-
     console.dir(data)
 
     data = await collection.findOne({ union: 1, member: 3 }, { projection: { name: 1 } })
-
     console.dir(data)
 
     data = await collection.findOne({ lvl: 10 }, { projection: { name: 1 } })
-
     console.dir(data)
 
     await collection.deleteOne({ _id: 1 })
 
     cursor = await collection.find({})
-
     console.table(cursor.toArray())
 
     await collection.deleteMany({})
 }
 
-async function test_auto() {
+async function test_auto()
+{
     const client = await mdb.connect("mysql://root:123456@192.168.1.4", { log: console.log })
 
     const db = client.db("project")

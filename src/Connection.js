@@ -19,11 +19,11 @@ module.exports = class Connection
         this.mysql = await mysql.createConnection(this.option)
     }
 
-    query(sql,values)
+    query(sql, values)
     {
         return new Promise((resolve, reject) =>
         {
-            this.cmds.push({sql,values,resolve, reject,retry : 0})
+            this.cmds.push({ sql, values, resolve, reject, retry: 0 })
 
             this.do()
         })
@@ -31,7 +31,7 @@ module.exports = class Connection
 
     do()
     {
-        if(this.doing == true)
+        if (this.doing == true)
         {
             return
         }
@@ -52,31 +52,28 @@ module.exports = class Connection
 
         let cmd = this.cmds.shift()
 
-        cmd.retry ++
+        cmd.retry++
 
         try
         {
-            const result = await this.mysql.query(cmd.sql,cmd.values)
+            const result = await this.mysql.query(cmd.sql, cmd.values)
 
-            if(this.log)
+            if (this.log)
             {
                 this.log(`query success:${cmd.sql}`)
             }
 
             cmd.resolve(result)
         }
-        catch(error)
+        catch (error)
         {
-            this.mysql.close()
-            this.lost_conn()
-
-            if(cmd.retry < 3)
+            if (cmd.retry < 3)          //继续尝试
             {
                 this.cmds.unshift(cmd)
             }
-            else
+            else 
             {
-                if(this.log)
+                if (this.log)
                 {
                     this.log(`query error:${cmd.sql},${error}`)
                 }
@@ -84,32 +81,38 @@ module.exports = class Connection
                 cmd.reject(error)
             }
 
-            return
+            if (error.fatal == true || error.fatal == null)           //表示连接还活着
+            {
+                this.mysql.close()
+                this.lost_conn()
+
+                return
+            }
         }
-        
+
         this.do_first()
     }
 
     lost_conn()
     {
-        setTimeout(async ()=>
+        setTimeout(async () =>
         {
             try
             {
                 await this.connect()
             }
-            catch(error)
+            catch (error)
             {
                 this.lost_conn()
                 return
             }
 
-            if(!this.doing)
+            if (!this.doing)
             {
                 return
             }
 
             this.do_first()
-        },3000)
+        }, 3000)
     }
 }

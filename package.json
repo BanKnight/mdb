@@ -1,10 +1,10 @@
 {
   "name": "@bansky/mdb",
-  "version": "0.15.0",
+  "version": "0.16.0",
   "description": "用mysql作为存储介质，提供类似于mongodb的接口",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "benchmark": "node examples/benchmark.js"
   },
   "author": "bansky",
   "license": "MIT",

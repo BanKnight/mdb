@@ -12,6 +12,7 @@
 + collection.createIndex(fields,option):创建json字段中的额外索引(虚拟列)，会在真正写入的时候创建索引
 + collection.deleteOne(cond):指定条件下删除一条记录
 + collection.deleteMany(cond):指定条件下删除所有记录
++ collection.truncate():清空
 
 # 原理
 将mongodb的bson结构存放在mysql的json字段中，封装这个json字段的使用，使得就好像在使用mongodb
@@ -24,6 +25,7 @@
 
 # 缺点
 + upsert特性：在更新失败后，会进行插入，因此对插入较多的场合（例如日志应用，更建议使用insert接口），操作次数比实际需要多出一倍
++ 性能差：对json的insert和update的操作，性能削减严重，耗时大约100ms，相比普通情况下是大约1ms
 
 # 使用例子
 [例子](https://github.com/BanKnight/mdb/blob/master/examples/simple.js)
